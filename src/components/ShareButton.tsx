@@ -1,4 +1,4 @@
-//Client Server
+//Client component
 
 'use client';
 
