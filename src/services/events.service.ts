@@ -38,3 +38,8 @@ export async function getEvents(): Promise<AppEvent[]> {
   await new Promise((resolve) => setTimeout(resolve, 200));
   return MOCK_EVENTS;
 }
+
+export async function getEventById(id: string): Promise<AppEvent | undefined> {
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  return MOCK_EVENTS.find((event) => event.id === id);
+}

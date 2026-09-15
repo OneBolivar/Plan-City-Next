@@ -26,15 +26,15 @@ export default function RootLayout({
   return (
     <html lang="es" className="h-full">
       <body className={`${geistSans.variable} ${geistMono.variable} min-h-full flex flex-col bg-slate-50 text-slate-900 antialiased`}>
-        {/* 1. Barra de navegación fija */}
+        {/* Barra de navegación fija */}
         <Navbar />
 
-        {/* 2. Contenido dinámico de cada página */}
+        {/* Contenido dinámico de cada página */}
         <div className="flex-1">
           {children}
         </div>
 
-        {/* 3. Footer global */}
+        {/* Footer global */}
         <footer className="border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-500">
           <p>© {new Date().getFullYear()} PlanCity. Todos los derechos reservados.</p>
         </footer>
@@ -42,3 +42,4 @@ export default function RootLayout({
     </html>
   );
 }
+
