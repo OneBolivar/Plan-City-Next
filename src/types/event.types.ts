@@ -1,11 +1,14 @@
+import { Timestamp } from "next/dist/server/lib/cache-handlers/types";
+
 export interface AppEvent {
-  id: string;
-  title: string;
-  description: string;
+  id: string; 
+  name: string;
+  description?: string;
   date: string;
   location: string;
   price: number;
+  capacity : number;
   categoryId: string;
-  categoryName: string;
-  imageUrl?: string;
+  created_at : Timestamp;
+  updated_at : Timestamp;
 }

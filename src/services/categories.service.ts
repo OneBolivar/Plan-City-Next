@@ -1,30 +1,25 @@
-import { Category } from "@/types/category.types";
+import { api } from "./api";
+import { AppEvent } from "@/types/event.types";
+import axios from "axios";
 
-const MOCK_CATEGORRIES: Category[] = [
-    {
-        id: '1',
-        name: 'Musica y festivales',
-        description: 'Conciertos, festivales y eventos musicales de todo tipo.',
-    },
-    {
-        id: '2',
-        name: 'Deportes',
-        description: 'Eventos y competencias deportivas de todo tipo.',
-    },
-    {
-        id: '3',
-        name: 'Cultura y teatro',
-        description: 'Obras de teatro, exposiciones y eventos culturales.',
-    },
-    {
-        id: '4',
-        name: 'Tecnologia e Innovacion',
-        description: 'Eventos y actividades relacionadas con la tecnología e innovación.',
+export async function getCategories(): Promise<AppEvent[]> {
+    try{
+        const response = await api.get <AppEvent[]>("/categories");
+        return response.data;
+    }catch (error) {
+        console.error("Fallo al obtener las eventos", error);
+        return [];
+        }
     }
 
-]
-
-export async function getCategories(): Promise<Category[]>{
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    return MOCK_CATEGORRIES;
+export async function getCategoryById(id: string): Promise<AppEvent | undefined> {
+    try {
+        const response = await api.get<AppEvent>(`/categories${id}`);
+        return response.data
+    } catch (error) {
+        if (axios.isAxiosError(error)){
+            if (error.response?.status === 404) return undefined
+        }
+    }
+    
 }

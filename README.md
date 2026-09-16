@@ -36,3 +36,9 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 # Plan-City-Next
 # Plan-City-Next
+
+
+
+
+Base URL: http://localhost:3000   Swagger: http://localhost:3000/api/docs
+Admin sembrado: admin@examen.com / Admin123!. Para el flujo de usuario regular, regístrate desde /auth/register.
