@@ -1,3 +1,4 @@
+import { EventFormData } from "@/types/event.schema";
 import { api } from "./api";
 import { AppEvent } from "@/types/event.types";
 import axios from "axios";
@@ -23,7 +24,7 @@ export async function getEventId(id: string): Promise<AppEvent | undefined> {
   }
 }
 
-export async function createEevent(eventData: Omit<AppEvent, "id">): Promise<AppEvent | null> {
+export async function createEvent(eventData: EventFormData): Promise<AppEvent | null> {
   try {
     const response = await api.post<AppEvent>('/events', eventData);
     return response.data

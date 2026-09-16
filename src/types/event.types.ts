@@ -1,4 +1,3 @@
-import { Timestamp } from "next/dist/server/lib/cache-handlers/types";
 
 export interface AppEvent {
   id: string; 
@@ -9,6 +8,6 @@ export interface AppEvent {
   price: number;
   capacity : number;
   categoryId: string;
-  created_at : Timestamp;
-  updated_at : Timestamp;
+  created_at : string;
+  updated_at : string;
 }
