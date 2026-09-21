@@ -1,7 +1,17 @@
-import { api } from "./api";
-import { AuthResponse, LoginDto } from "../types/auth.types";
+import axios from 'axios';
+import { LoginDto, AuthUser } from '@/types/auth.types';
 
-export async function loginService(payload: LoginDto): Promise<AuthResponse>{
-    const response = await api.post<AuthResponse>('/auth/login', payload)
-    return response.data
+// Definimos el tipo de lo que responde Route Handler
+export interface RouteHandlerLoginResponse {
+  message: string;
+  user: AuthUser;
+}
+
+/**
+ * Llama al Route Handler de Next.js (/api/auth/login).
+ * Next.js se encarga de pedir el token a NestJS y setear la cookie httpOnly.
+ */
+export async function loginService(payload: LoginDto): Promise<RouteHandlerLoginResponse> {
+  const response = await axios.post<RouteHandlerLoginResponse>('/api/auth/login', payload);
+  return response.data;
 }

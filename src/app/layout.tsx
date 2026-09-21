@@ -24,22 +24,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className="h-full">
-      <body className={`${geistSans.variable} ${geistMono.variable} min-h-full flex flex-col bg-slate-50 text-slate-900 antialiased`}>
+    <html lang="es" className="h-full dark">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} min-h-full flex flex-col bg-[#0d0d12] text-slate-100 antialiased selection:bg-purple-500 selection:text-white`}
+      >
         {/* Barra de navegación fija */}
         <Navbar />
 
         {/* Contenido dinámico de cada página */}
-        <div className="flex-1">
+        <div className="flex-1 flex flex-col">
           {children}
         </div>
 
-        {/* Footer global */}
-        <footer className="border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-500">
+        {/* Footer global adaptado al tema oscuro */}
+        <footer className="border-t border-purple-500/10 bg-[#161622]/40 backdrop-blur-md py-6 text-center text-xs text-slate-500">
           <p>© {new Date().getFullYear()} PlanCity. Todos los derechos reservados.</p>
         </footer>
       </body>
     </html>
   );
 }
-

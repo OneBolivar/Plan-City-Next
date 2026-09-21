@@ -3,13 +3,15 @@ export interface LoginDto {
   password: string;
 }
 
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  createdAt: string;
+}
+
 export interface AuthResponse {
   accessToken: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    role: string;
-    createdAt: string;
-  };
+  user: AuthUser;
 }
