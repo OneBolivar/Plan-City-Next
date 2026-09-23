@@ -15,3 +15,4 @@ export async function loginService(payload: LoginDto): Promise<RouteHandlerLogin
   const response = await axios.post<RouteHandlerLoginResponse>('/api/auth/login', payload);
   return response.data;
 }
+
