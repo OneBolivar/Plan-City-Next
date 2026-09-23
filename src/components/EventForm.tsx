@@ -1,10 +1,9 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { eventSchema, EventFormData } from "@/types/event.schema";
-import { createEvent } from "@/services/events.service";
-import { Category } from "@/types/category.types";
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import axios from 'axios';
+import { Category } from '@/types/category.types';
 
 interface EventFormProps {
   categories: Category[];
@@ -13,79 +12,57 @@ interface EventFormProps {
 export default function EventForm({ categories }: EventFormProps) {
   const router = useRouter();
 
-  // Estado que guarda los valores ingresados en los inputs
-  // Iniciamos price y capacity como string vacío para evitar que aparezca un 0 fijo que bloquee el borrado
   const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    date: "",
-    location: "",
-    price: "",
-    capacity: "",
-    categoryId: "",
+    name: '',
+    description: '',
+    date: '',
+    location: '',
+    price: '',
+    capacity: '',
+    categoryId: '',
   });
 
-  // Diccionario para guardar los errores por campo: { name: 'mensaje', price: 'mensaje' }
-  const [errors, setErrors] = useState<
-    Partial<Record<keyof EventFormData, string>>
-  >({});
-
-  // Estado para bloquear el botón mientras se procesa la petición en red
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Maneja los cambios en cualquier input, textarea o select
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    const { name, value, type } = e.target;
-
-    setFormData((prev) => ({
-      ...prev,
-      // Si el input es type="number" y el usuario borra todo, dejamos el string vacío en vez de forzar un 0
-      [name]: type === "number" ? (value === "" ? "" : Number(value)) : value,
-    }));
-
-    // Si el usuario empieza a corregir el campo, limpiamos su error visual
-    if (errors[name as keyof EventFormData]) {
-      setErrors((prev) => ({ ...prev, [name]: undefined }));
-    }
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError(null);
 
-    // Inspección segura: 'safeParse' evalúa los datos sin lanzar excepciones
-    const validationResult = eventSchema.safeParse(formData);
-
-    // Si la aduana de Zod rechaza los datos:
-    if (!validationResult.success) {
-      const formattedErrors: Partial<Record<keyof EventFormData, string>> = {};
-
-      // Recorremos los fallos detectados por Zod
-      for (const issue of validationResult.error.issues) {
-        const fieldName = issue.path[0] as keyof EventFormData;
-        if (!formattedErrors[fieldName]) {
-          formattedErrors[fieldName] = issue.message;
-        }
-      }
-
-      setErrors(formattedErrors);
-      setIsSubmitting(false);
-      return; // Detenemos el flujo aquí
-    }
-
-    // Si validationResult.success es true, validationResult.data contiene los datos garantizados
     try {
-      const newEvent = await createEvent(validationResult.data);
-      if (newEvent) {
-        router.push("/events"); // Redirige al catálogo general
-        router.refresh(); // Solicita a Next.js refrescar datos del servidor
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+
+      await axios.post(
+        `${backendUrl}/events`,
+        {
+          name: formData.name,
+          description: formData.description,
+          date: formData.date,
+          location: formData.location,
+          price: Number(formData.price),
+          capacity: Number(formData.capacity),
+          categoryId: formData.categoryId,
+        },
+        { withCredentials: true }
+      );
+
+      router.push('/events');
+      router.refresh();
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        const message = err.response?.data?.message;
+        setError(typeof message === 'string' ? message : 'Error al registrar el evento');
+      } else {
+        setError('Ocurrió un error inesperado al registrar el evento');
       }
-    } catch (err) {
-      console.error("Error al registrar el evento en el backend:", err);
     } finally {
       setIsSubmitting(false);
     }
@@ -94,207 +71,159 @@ export default function EventForm({ categories }: EventFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-6 bg-white p-6 sm:p-8 border border-slate-200 rounded-2xl shadow-sm"
+      className="space-y-6 bg-[#161622]/85 backdrop-blur-2xl border border-purple-500/20 p-6 sm:p-10 rounded-3xl shadow-2xl shadow-purple-950/40 relative overflow-hidden transition-all duration-300 hover:border-purple-500/40"
     >
-      {/* Campo: Nombre */}
-      <div>
-        <label
-          htmlFor="name"
-          className="block text-sm font-semibold text-slate-700 mb-1"
-        >
-          Nombre del Evento
+      <div className="absolute top-0 right-0 w-72 h-72 bg-purple-600/10 rounded-full blur-[90px] pointer-events-none -z-10" />
+
+      {error && (
+        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-3">
+          <span className="text-base">⚠️</span>
+          <span>{error}</span>
+        </div>
+      )}
+
+      {/* Nombre */}
+      <div className="group">
+        <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 mb-2 group-focus-within:text-purple-400 transition-colors">
+          Nombre del Evento <span className="text-purple-400">*</span>
         </label>
         <input
-          id="name"
-          name="name"
           type="text"
+          name="name"
+          required
+          placeholder="Ej: Concierto de Jazz en Vivo"
           value={formData.name}
           onChange={handleChange}
-          placeholder="Ej: Concierto de Jazz en Vivo"
-          className={`w-full px-4 py-2 border rounded-lg text-sm outline-none transition-colors ${
-            errors.name
-              ? "border-red-500 bg-red-50/20"
-              : "border-slate-300 focus:border-purple-600"
-          }`}
+          className="w-full px-4 py-3 bg-[#0d0d12]/90 border border-slate-700/60 rounded-xl text-slate-100 text-sm placeholder:text-slate-600 focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/15 transition-all duration-300"
         />
-        {errors.name && (
-          <p className="text-red-500 text-xs mt-1">{errors.name}</p>
-        )}
       </div>
 
-      {/* Campo: Categoría */}
-      <div>
-        <label
-          htmlFor="categoryId"
-          className="block text-sm font-semibold text-slate-700 mb-1"
-        >
-          Categoría
+      {/* Categoría */}
+      <div className="group">
+        <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 mb-2 group-focus-within:text-purple-400 transition-colors">
+          Categoría <span className="text-purple-400">*</span>
         </label>
-        <select
-          id="categoryId"
-          name="categoryId"
-          value={formData.categoryId}
-          onChange={handleChange}
-          className={`w-full px-4 py-2 border rounded-lg text-sm outline-none transition-colors ${
-            errors.categoryId
-              ? "border-red-500 bg-red-50/20"
-              : "border-slate-300 focus:border-purple-600"
-          }`}
-        >
-          <option value="">Selecciona una categoría...</option>
-          {categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-              {cat.name}
+        <div className="relative">
+          <select
+            name="categoryId"
+            required
+            value={formData.categoryId}
+            onChange={handleChange}
+            className="w-full px-4 py-3 bg-[#0d0d12]/90 border border-slate-700/60 rounded-xl text-slate-100 text-sm focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/15 transition-all duration-300 appearance-none cursor-pointer"
+          >
+            <option value="" className="bg-[#0d0d12] text-slate-500">
+              Selecciona una categoría...
             </option>
-          ))}
-        </select>
-        {errors.categoryId && (
-          <p className="text-red-500 text-xs mt-1">{errors.categoryId}</p>
-        )}
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id} className="bg-[#161622] text-slate-200">
+                {cat.name}
+              </option>
+            ))}
+          </select>
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-purple-400 text-xs">
+            ▼
+          </div>
+        </div>
       </div>
 
-      {/* Campo: Fecha y Hora */}
-      <div>
-        <label
-          htmlFor="date"
-          className="block text-sm font-semibold text-slate-700 mb-1"
-        >
-          Fecha y Hora
+      {/* Fecha y Hora */}
+      <div className="group">
+        <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 mb-2 group-focus-within:text-purple-400 transition-colors">
+          Fecha y Hora <span className="text-purple-400">*</span>
         </label>
         <input
-          id="date"
-          name="date"
           type="datetime-local"
+          name="date"
+          required
           value={formData.date}
           onChange={handleChange}
-          className={`w-full px-4 py-2 border rounded-lg text-sm outline-none transition-colors ${
-            errors.date
-              ? "border-red-500 bg-red-50/20"
-              : "border-slate-300 focus:border-purple-600"
-          }`}
+          className="w-full px-4 py-3 bg-[#0d0d12]/90 border border-slate-700/60 rounded-xl text-slate-100 text-sm focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/15 transition-all duration-300 [color-scheme:dark]"
         />
-        {errors.date && (
-          <p className="text-red-500 text-xs mt-1">{errors.date}</p>
-        )}
       </div>
 
-      {/* Fila doble: Precio y Aforo / Capacidad */}
+      {/* Precio y Capacidad */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Subcampo: Precio */}
-        <div>
-          <label
-            htmlFor="price"
-            className="block text-sm font-semibold text-slate-700 mb-1"
-          >
-            Precio (COP)
+        <div className="group">
+          <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 mb-2 group-focus-within:text-purple-400 transition-colors">
+            Precio (COP) <span className="text-purple-400">*</span>
           </label>
           <input
-            id="price"
-            name="price"
             type="number"
+            name="price"
             min="0"
-            placeholder="Ej: 50000"
+            required
+            placeholder="0 si es libre"
             value={formData.price}
             onChange={handleChange}
-            className={`w-full px-4 py-2 border rounded-lg text-sm outline-none transition-colors ${
-              errors.price
-                ? "border-red-500 bg-red-50/20"
-                : "border-slate-300 focus:border-purple-600"
-            }`}
+            className="w-full px-4 py-3 bg-[#0d0d12]/90 border border-slate-700/60 rounded-xl text-slate-100 text-sm placeholder:text-slate-600 focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/15 transition-all duration-300"
           />
-          {errors.price && (
-            <p className="text-red-500 text-xs mt-1">{errors.price}</p>
-          )}
         </div>
 
-        {/* Subcampo: Capacidad / Aforo */}
-        <div>
-          <label
-            htmlFor="capacity"
-            className="block text-sm font-semibold text-slate-700 mb-1"
-          >
-            Aforo / Capacidad
+        <div className="group">
+          <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 mb-2 group-focus-within:text-purple-400 transition-colors">
+            Aforo / Capacidad <span className="text-purple-400">*</span>
           </label>
           <input
-            id="capacity"
-            name="capacity"
             type="number"
+            name="capacity"
             min="1"
+            required
             placeholder="Ej: 150"
             value={formData.capacity}
             onChange={handleChange}
-            className={`w-full px-4 py-2 border rounded-lg text-sm outline-none transition-colors ${
-              errors.capacity
-                ? "border-red-500 bg-red-50/20"
-                : "border-slate-300 focus:border-purple-600"
-            }`}
+            className="w-full px-4 py-3 bg-[#0d0d12]/90 border border-slate-700/60 rounded-xl text-slate-100 text-sm placeholder:text-slate-600 focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/15 transition-all duration-300"
           />
-          {errors.capacity && (
-            <p className="text-red-500 text-xs mt-1">{errors.capacity}</p>
-          )}
         </div>
       </div>
 
-      {/* Campo: Ubicación */}
-      <div>
-        <label
-          htmlFor="location"
-          className="block text-sm font-semibold text-slate-700 mb-1"
-        >
-          Ubicación
+      {/* Ubicación */}
+      <div className="group">
+        <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 mb-2 group-focus-within:text-purple-400 transition-colors">
+          Ubicación <span className="text-purple-400">*</span>
         </label>
         <input
-          id="location"
-          name="location"
           type="text"
+          name="location"
+          required
+          placeholder="Ej: Gran Malecón del Río"
           value={formData.location}
           onChange={handleChange}
-          placeholder="Ej: Gran Malecón del Río"
-          className={`w-full px-4 py-2 border rounded-lg text-sm outline-none transition-colors ${
-            errors.location
-              ? "border-red-500 bg-red-50/20"
-              : "border-slate-300 focus:border-purple-600"
-          }`}
+          className="w-full px-4 py-3 bg-[#0d0d12]/90 border border-slate-700/60 rounded-xl text-slate-100 text-sm placeholder:text-slate-600 focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/15 transition-all duration-300"
         />
-        {errors.location && (
-          <p className="text-red-500 text-xs mt-1">{errors.location}</p>
-        )}
       </div>
 
-      {/* Campo: Descripción */}
-      <div>
-        <label
-          htmlFor="description"
-          className="block text-sm font-semibold text-slate-700 mb-1"
-        >
+      {/* Descripción */}
+      <div className="group">
+        <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 mb-2 group-focus-within:text-purple-400 transition-colors">
           Descripción (Opcional)
         </label>
         <textarea
-          id="description"
           name="description"
           rows={4}
+          placeholder="Describe los detalles, recomendaciones o invitados del evento..."
           value={formData.description}
           onChange={handleChange}
-          placeholder="Describe los detalles, recomendaciones o invitados del evento..."
-          className={`w-full px-4 py-2 border rounded-lg text-sm outline-none transition-colors resize-none ${
-            errors.description
-              ? "border-red-500 bg-red-50/20"
-              : "border-slate-300 focus:border-purple-600"
-          }`}
+          className="w-full px-4 py-3 bg-[#0d0d12]/90 border border-slate-700/60 rounded-xl text-slate-100 text-sm placeholder:text-slate-600 focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/15 transition-all duration-300 resize-none"
         />
-        {errors.description && (
-          <p className="text-red-500 text-xs mt-1">{errors.description}</p>
-        )}
       </div>
 
-      {/* Botón de envío con estado de carga */}
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="w-full py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 text-white font-semibold rounded-lg text-sm transition-colors shadow-sm"
-      >
-        {isSubmitting ? "Validando y Publicando..." : "Publicar Evento"}
-      </button>
+      {/* Botón de acción */}
+      <div className="pt-4 border-t border-purple-500/10">
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="w-full py-3.5 bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 text-white font-semibold rounded-xl text-sm shadow-[0_0_25px_rgba(168,85,247,0.35)] hover:shadow-[0_0_35px_rgba(168,85,247,0.55)] transition-all duration-300 transform active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
+        >
+          {isSubmitting ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <span>Publicando...</span>
+            </>
+          ) : (
+            'Publicar Evento'
+          )}
+        </button>
+      </div>
     </form>
   );
 }

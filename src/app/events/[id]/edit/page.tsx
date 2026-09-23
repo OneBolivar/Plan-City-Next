@@ -11,7 +11,7 @@ import { Category } from '@/types/category.types';
 export default function EditEventPage() {
   const router = useRouter();
   const params = useParams();
-  const id = params?.id as string;
+  const id = typeof params?.id === 'string' ? params.id : '';
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [formData, setFormData] = useState({
@@ -29,40 +29,50 @@ export default function EditEventPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     async function loadData() {
+      if (!id) return;
+
       try {
         const [eventData, categoriesData] = await Promise.all([
           getEventId(id),
           getCategories(),
         ]);
 
-        if (categoriesData) {
-          setCategories(categoriesData);
-        }
+        if (isMounted) {
+          if (categoriesData) {
+            setCategories(categoriesData);
+          }
 
-        if (eventData) {
-          setFormData({
-            name: eventData.name || eventData.title || '',
-            description: eventData.description || '',
-            date: eventData.date
-              ? new Date(eventData.date).toISOString().slice(0, 16)
-              : '',
-            location: eventData.location || '',
-            price: eventData.price?.toString() || '',
-            capacity: eventData.capacity?.toString() || '',
-            categoryId: eventData.categoryId?.toString() || '',
-          });
+          if (eventData) {
+            setFormData({
+              name: eventData.name || eventData.name || '',
+              description: eventData.description || '',
+              date: eventData.date
+                ? new Date(eventData.date).toISOString().slice(0, 16)
+                : '',
+              location: eventData.location || '',
+              price: eventData.price?.toString() || '',
+              capacity: eventData.capacity?.toString() || '',
+              categoryId: eventData.categoryId?.toString() || '',
+            });
+          }
+          setLoading(false);
         }
-      } catch (err) {
-        setError('No se pudo cargar la información del evento');
-      } finally {
-        setLoading(false);
+      } catch {
+        if (isMounted) {
+          setError('No se pudo cargar la información del evento');
+          setLoading(false);
+        }
       }
     }
 
-    if (id) {
-      loadData();
-    }
+    void loadData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
 
   const handleChange = (
@@ -74,7 +84,7 @@ export default function EditEventPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
@@ -99,8 +109,13 @@ export default function EditEventPage() {
 
       router.push(`/events/${id}`);
       router.refresh();
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Error al actualizar el evento');
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        const message = err.response?.data?.message;
+        setError(typeof message === 'string' ? message : 'Error al actualizar el evento');
+      } else {
+        setError('Error inesperado al actualizar el evento');
+      }
     } finally {
       setIsSubmitting(false);
     }
