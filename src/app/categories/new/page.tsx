@@ -23,22 +23,17 @@ export default function NewCategoryPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
 
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
-
-      await axios.post(
-        `${backendUrl}/categories`,
-        {
-          name: formData.name,
-          description: formData.description,
-        },
-        { withCredentials: true }
-      );
+      // Llamada directa al Route Handler local (sin problemas de CORS)
+      await axios.post('/api/categories', {
+        name: formData.name,
+        description: formData.description,
+      });
 
       router.push('/categories');
       router.refresh();

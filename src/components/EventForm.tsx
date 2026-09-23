@@ -32,27 +32,22 @@ export default function EventForm({ categories }: EventFormProps) {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
 
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
-
-      await axios.post(
-        `${backendUrl}/events`,
-        {
-          name: formData.name,
-          description: formData.description,
-          date: formData.date,
-          location: formData.location,
-          price: Number(formData.price),
-          capacity: Number(formData.capacity),
-          categoryId: formData.categoryId,
-        },
-        { withCredentials: true }
-      );
+      // Llamada directa al Route Handler interno de Next.js
+      await axios.post('/api/events', {
+        name: formData.name,
+        description: formData.description,
+        date: formData.date,
+        location: formData.location,
+        price: Number(formData.price),
+        capacity: Number(formData.capacity),
+        categoryId: formData.categoryId,
+      });
 
       router.push('/events');
       router.refresh();
